@@ -8,9 +8,6 @@
 
     DO-TO (6/19/18 @ 1648)
 
-        * utility function to parse these goofy ass timestamps from ARS
-          for instance: "2014-12-03T22:53:37.000+0000"
-
         * support for attachments
 
         * ARFormEntry class to model a set of fields from a form
@@ -19,8 +16,6 @@
         * ARFormEntryList class to model a result set (query output)
 
         * pushFields emulation
-
-        * test suite
 
         * legit npm release
 
