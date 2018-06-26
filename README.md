@@ -83,7 +83,7 @@ async function doSomeRemedyStuff(){
 
     // create a ticket
     let newTicket = await api.createTicket({
-        schema:     <formName>,
+        schema:     formName,
         fields:     {
             fieldNameOne:   "valueNumber1",
             fieldNameTwo:   "valueNumber2"
@@ -98,8 +98,8 @@ async function doSomeRemedyStuff(){
 
     // modify a ticket
     await api.modifyTicket({
-        schema:     <formName>
-        ticket:     <entryId>
+        schema:     formName
+        ticket:     entryId
         fields:     {
             fieldNameOne:   "a new value"
         }
@@ -111,8 +111,8 @@ async function doSomeRemedyStuff(){
 
     // retrieve field values from a ticket when you know the ticket number
     let myTicketData = await api.getTicket({
-        schema:     <formName>
-        ticket:     <entryId>
+        schema:     formName
+        ticket:     entryId
         fields:     ['List', 'Of', 'FieldNames', 'to get', 'values for']
     }).catch(function(e){
         throw(`failed getTicket: ${e.toString()}`)
@@ -126,7 +126,7 @@ async function doSomeRemedyStuff(){
 
     // query for tickets
     let myRecordList = await api.query({
-        schema:     <formName>
+        schema:     formName
         QBE:        `'Entry ID' != $NULL$`
         Fields:     ['List', 'Of', 'FieldNames', 'to get', 'values for']
     }).catch(function(e){
@@ -143,9 +143,9 @@ async function doSomeRemedyStuff(){
 
     // fetch an attachment
     let myAttachmentBinaryData = await api.getAttachment({
-        schema:         <formName>
-        entryId:        <entryId>
-        fieldName:      <attachmentFieldNameToFetch>
+        schema:         formName
+        entryId:        entryId
+        fieldName:      attachmentFieldNameToFetch
     }).catch(function(e){
         throw(`failed to fetch attachment: ${e.toString()()}`)
     });
@@ -156,8 +156,8 @@ async function doSomeRemedyStuff(){
 
     // delete a ticket
     let theDeletedTicketNumber = await api.deleteTicket({
-        schema:     <formName>
-        ticket:     <entryId>
+        schema:     formName
+        ticket:     entryId
     }).catch(function(e){
         throw(`failed to delete ticket: ${e.toString()}`);
     })
@@ -180,7 +180,7 @@ async function doSomeRemedyStuff(){
         that 'Entry ID', throw an error
     */
     let ticketId = await api.mergeData({
-        schema:                 <ticket>,
+        schema:                 ticket,
         handleDuplicateEntryId: "error",
         fields: {
             'Entry ID':             'BOGUS-000000001',
@@ -221,18 +221,18 @@ Basically everything in **RemedyRestAPI** lends itself quite well to wrapping (p
 
 ```javascript
 {
-    httpStatus:             <http status code>
+    httpStatus:             httpStatuCode
     httpResponseHeaders:    {
-        <headerName>:       <headerValue>
+        headerName: headerValue
     }
-    thrownByFunction:       (optional) name of ARSRestAPI function that threw it
-    thrownByFunctionArgs:   (optional) a copy of the args sent to <thrownByFunction> (if speficied)
+    thrownByFunction:       // (optional) name of ARSRestAPI function that threw it
+    thrownByFunctionArgs:   // (optional) a copy of the args sent to <thrownByFunction> (if speficied)
     arsErrorList:           [
         {
-            messageType:            ok | error | warning | fatal | bad status | non-ars,
-            messageText:            main error message ($ERRMSG$)
-            messageAppendedText:    addtional error message ($ERRAPPENDMSG$)
-            messageNumber:          error number (integer / $ERRNO$)
+            messageType:            // ok | error | warning | fatal | bad status | non-ars,
+            messageText:            // main error message ($ERRMSG$)
+            messageAppendedText:    // addtional error message ($ERRAPPENDMSG$)
+            messageNumber:          // error number (integer / $ERRNO$)
         },
         ...
     ]
@@ -282,13 +282,13 @@ As mentioned above, objects of this class represent a connection to a specific *
 ```javascript
 try {
     let api = new RemedyRestAPI({
-        protocol:   http | https (default https)
-        server:     <hostname>
-        port:       <portNumber> (optionally specify a nonstandard port number)
-        user:       <userId>
-        password:   <password>
-        debug:      false | true
-        timeout:    <milliseconds> (default 2 minutes)    
+        protocol:   sslOrNot,       // http | https (default https)
+        server:     hostname,
+        port:       portNumber,    //(optionally specify a nonstandard port number)
+        user:       userId,
+        password:   password,
+        debug:      bool,          // false | true (default false)
+        timeout:    milliseconds   // (default 2 minutes)    
     });
 }catch(e){
     throw(`failed to create object: ${e}`)
@@ -304,13 +304,13 @@ the constructor doesn't return a promise so you can't use a fiddy block, you can
   One of "http" or "https", if not specified, defaults to "https"
 
 * **port**
-  You can optionally specify a non-standard port. If not specified, the standard for the given <protocol> is used (http: 80 / https: 443)
+  You can optionally specify a non-standard port. If not specified, the standard for the given **protocol** is used (http: 80 / https: 443)
 
 * **user**
   The user you wish to connect to Remedy as
 
 * **password**
-  The password for <user>
+  The password for **user**
 
 * **debug**
   boolean value, defaults to false if not specified. if specified, messages will be echoed via console.log()
@@ -375,12 +375,12 @@ This force-invalidates the API token for the user's session on the ARServer (log
 ## query()
 ```javascript
 let resultList = await api.query({
-    schema:         <formName>,
+    schema:         formName,
     fields:         ['array of', 'field names', 'to get values', 'for'],
-    QBE:            <QBE string>,
-    offset:         <return data from this row number -- for paging>
-    limit:          <max number of rows to return>
-    sort:           <see the docs. but basically <field>.asc or <field>.desc comma separated>,
+    QBE:            QBEstring,
+    offset:         integer,                        // return results starting at this row number
+    limit:          maxNumberOfRowsToGet,
+    sort:           aStringIndicatingSortOrder      // see the docs. but basically <field>.asc or <field>.desc comma separated>
     getAttachments: true
 }).catch(function(e){
     throw(`query failed: ${e}`)
@@ -393,7 +393,7 @@ As you might imagine, this function allows you to execute a query (**QBE**) agai
   this is the name of the form you want to query against. If this was SQL, it'd be the table name.
 
 * **fields**
-  this is an array of field names on the form specified by <schema> for which you'd like to get data. If this was SQL, it'd be the select statement.
+  this is an array of field names on the form specified by **schema** for which you'd like to get data. If this was SQL, it'd be the select statement.
 
 * **QBE**
   the "query string" (aka "qualification"). If this was SQL, this would be the where clause
@@ -408,7 +408,7 @@ As you might imagine, this function allows you to execute a query (**QBE**) agai
   [the documentation from BMC](https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-GETmultipleentries) is hilariously sparse on this topic. As far as I can tell, you can at least specify ascending ("asc") and descending ("desc") by appending that with a dot to the field name. Yeah I don't even know. If you specify it, I'll send it to the server. You may or may not get back what you're expecting. Who knows. BMC doesn't write documentation, they just employ boatloads of salesfolk apparently.
 
 * **fetchAttachments**
-  optional, if not specified defaults to false. If true, AND you have specified at least one attachment field on <fields>, the function will fetch the binary data for each attachment and return it inline with results (see below)
+  optional, if not specified defaults to false. If true, AND you have specified at least one attachment field on **fields**, the function will fetch the binary data for each attachment and return it inline with results (see below)
 
 The function returns the same datastructure as returned by the API:
 
@@ -457,7 +457,7 @@ So by default, it'll tell you the filename, and size and where to fetch it from.
     name:       'spongeBob.PNG',
     sizeBytes:  692080,
     href:       'https://....',
-    data:       <a big old arrayBuffer full of binary data>
+    data:       giganticArrayBuffer
 } ...
 ```
 
@@ -467,8 +467,8 @@ so yeah, we just go ahead and fetch the data for any attachment fields you selec
 ## getTicket()
 ```javascript
 let ticketData = await api.getTicket({
-    schema:     <formName>,
-    ticket:     <entryId>,
+    schema:     formName,
+    ticket:     entryId,
     fields:     ['array of', 'field names', 'to get values', 'for'],
 }).catch(function(e){
     throw(`I died tryin'!: ${e}`);
@@ -499,9 +499,9 @@ as with **query()**, you can set **getAttachments** true to fetch attachment bin
 ## getAttachment()
 ```javascript
 let bigOldArrayBuffer = await api.getAttachment({
-    schema:         <formName>
-    ticket:         <entryId>
-    fieldName:      <attachmentFieldName>
+    schema:         formName
+    ticket:         entryId
+    fieldName:      attachmentFieldName
 }).catch(function(e){
     throw(`I tried to rock a rhyme, but the server said it's not that eas-ayy: ${e}`)
 })
@@ -513,7 +513,7 @@ this returns *just* the binary data in an arrayBuffer. No datastructure or any o
 ## createTicket()
 ```javascript
 let ticketIdentifier = await api.createTicket({
-    schema:         <formName>,
+    schema:         formName,
     fields:         {
         "fieldName":    "value for field",
         "fieldBName":   "value for this other field"
@@ -524,12 +524,12 @@ let ticketIdentifier = await api.createTicket({
 });
 ```
 
-This creates a ticket in the given <schema> with the given <field> values, or it dies tryin'. Like Fiddy. Upon success, it returns an object of the form:
+This creates a ticket in the given **schema** with the given **field** values, or it dies tryin'. Like Fiddy. Upon success, it returns an object of the form:
 
 ```javascript
 {
-    entryId:        <value from field number 1 on the created record, whatever the name of that field may be>
-    url:            <the REST URL for the newly created record>
+    entryId:        anEntryId  // value from field number 1 on the created record, whatever the name of that field may be
+    url:            aURL       // the REST URL for the newly created record
 }
 ```
 
@@ -537,8 +537,8 @@ This creates a ticket in the given <schema> with the given <field> values, or it
 ## modifyTicket()
 ```javascript
 await api.modifyTicket({
-    schema:     <formName>,
-    ticket:     <entryId>,
+    schema:     formName,
+    ticket:     entryId,
     fields:     {
         "fieldOne": "valueForFieldOne",
         "fieldTwo": "valueForFieldTwo"
@@ -549,33 +549,33 @@ await api.modifyTicket({
 });
 ```
 
-this updates the given <ticket> on the given <schema> with the given <field> values, or dies tryin'.
+this updates the given **ticket** on the given **schema** with the given **field** values, or dies tryin'.
 
 
 ## deleteTicket()
 ```javascript
 let deletedEntryId = await api.deleteTicket({
-    schema:     <formName>,
-    ticket:     <entryId>
+    schema:     formName,
+    ticket:     entryId
 }).catch(function(e){
     throw(`failed to delete ticket: ${e}`);
 });
 ```
 
-deltes the specified <ticket> on the specified <schema> if the user you've authenticated as has permission to do so. it returns the entryId of the ticket you deleted because ... well I dunno why, but it just seemed like a cool thing to do y'know?
+deltes the specified **ticket** on the specified **schema** if the user you've authenticated as has permission to do so. it returns the entryId of the ticket you deleted because ... well I dunno why, but it just seemed like a cool thing to do y'know?
 
 
 ## mergeData()
 ```javascript
 let ticketIdentifier = await api.mergeData({
-    fields:                 {fieldOne:valueOne, fieldTwo:valueTwo ...}
-    QBE:                    <qualification> (optional)
-    handleDuplicateEntryId: error | create | overwrite | merge | alwaysCreate (default error)
-    ignorePatterns:         <bool> (default false)
-    ignoreRequired:         <bool> (default false)
-    workflowEnabled:        <bool> (default true)
-    associationsEnabled:    <bool> (default true)
-    multimatchOption:       error | useFirstMatching (default error)
+    fields:                 {fieldOne:valueOne, fieldTwo:valueTwo ...},
+    QBE:                    qualification,          // (optional)
+    handleDuplicateEntryId: enum,                   // error | create | overwrite | merge | alwaysCreate (default error)
+    ignorePatterns:         bool,                   // (default false)
+    ignoreRequired:         bool,                   // (default false)
+    workflowEnabled:        bool,                   // (default true)
+    associationsEnabled:    bool,                   // (default true)
+    multimatchOption:       enum                    // error | useFirstMatching (default error)
 }).catch(function(e){
     throw(`merge failed! ${e}`);
 });
