@@ -195,7 +195,7 @@ async function doSomeRemedyStuff(){
 }
 ```
 
-# Object Hierarchy & Capturing Exceptions
+# Object Heirarchy & Capturing Exceptions
 
 Yeah ok, so this is an Object Oriented library. From reading forums and blog posts, you'd think that was completely passe and it's all functional these days. Perhaps it isn't cool or whatever, but it gets the job done and I can dig it. So what've we got here? Well it's an object hierarchy that looks more or less like this:
 
@@ -297,25 +297,25 @@ try {
 
 the constructor doesn't return a promise so you can't use a fiddy block, you can still die tryin' :-)
 
-* server
+* **server**
   The hostname or IP address of the REST endpoint serving the Remedy API
 
-* protocol
+* **protocol**
   One of "http" or "https", if not specified, defaults to "https"
 
-* port
+* **port**
   You can optionally specify a non-standard port. If not specified, the standard for the given <protocol> is used (http: 80 / https: 443)
 
-* user
+* **user**
   The user you wish to connect to Remedy as
 
-* password
+* **password**
   The password for <user>
 
-* debug
+* **debug**
   boolean value, defaults to false if not specified. if specified, messages will be echoed via console.log()
 
-* timeout
+* **timeout**
   the maximum number of miliseconds to wait for a response on an open socket. By default we set this to 2 minutes. Be aware that there's also a maximum transaction timeout configured somewhere on the ARServer, but you can set it up here how long to wait before giving up.
 
 
@@ -351,7 +351,7 @@ let api = await new RemedyRestAPI({
 You can send all of the arguments to authenticate() as you would to the constructor (server, user, password, etc), however these arguments will *overwrite* corresponding attributes that already exist in the object (for instance if you were calling authenticate on a previously instantiated object=)
 
 
-## isAuthenticated()
+## isAuthenticated
 
 ```javascript
 if (api.isAuthenticated){
