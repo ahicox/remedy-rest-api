@@ -207,9 +207,9 @@ Yeah ok, so this is an Object Oriented library. From reading forums and blog pos
             RemedyRestAPI       (the part you actually deal with)
 ```
 
-For the most part, the RemedyRestAPI and the ARSRestException classes are where the action is.
+For the most part, the **RemedyRestAPI** and the **ARSRestException** classes are where the action is.
 
-Instantiating an object of the RemedyRestAPI class yields an object that can be used more or less as an "api handle" for a given remedy server, and user. All functions that talk to the server return a promise. Used in conjunction with async/await, this arrangement lends itself to what I like to call the [Fiddy Block](https://en.wikipedia.org/wiki/Get_Rich_or_Die_Tryin%27)
+Instantiating an object of the **RemedyRestAPI** class yields an object that can be used more or less as an "api handle" for a given remedy server, and user. All functions that talk to the server return a promise. Used in conjunction with async/await, this arrangement lends itself to what I like to call the [Fiddy Block](https://en.wikipedia.org/wiki/Get_Rich_or_Die_Tryin%27)
 
 ```javascript
     let cashMoney = await getRich().catch(function(e){
@@ -217,7 +217,7 @@ Instantiating an object of the RemedyRestAPI class yields an object that can be 
     });
 ```
 
-Basically everything in RemedyRestAPI lends itself quite well to wrapping (pun intended) in a "Fiddy Block". Every function in RemedyRestAPI will send an object of the ARSRestException class to the catch function ("e", in the example above). Objects of the ARSRestException class have the form:
+Basically everything in **RemedyRestAPI** lends itself quite well to wrapping (pun intended) in a "Fiddy Block". Every function in **RemedyRestAPI** will send an object of the **ARSRestException** class to the catch function ("e", in the example above). Objects of the **ARSRestException** class have the form:
 
 ```javascript
 {
@@ -241,22 +241,22 @@ Basically everything in RemedyRestAPI lends itself quite well to wrapping (pun i
 
 You may note that 'arsErrorList' is an array. The AR Server may return an arbitrary number of error objects inside a single exception. Why? I don't know. BMC is like that, man. Maybe it contains something like a stack trace in some circumstances? I dunno. I DO know this though, that having multiple errors to deal with in the scenario of "I called this API function and it failed and I need to know the singlular reason why" is less than useful.
 
-To that end, the ARSRestExcption class has some attribute accessors that you can call to treat this as the singular exception it probably is:
+To that end, the **ARSRestExcption** class has some attribute accessors that you can call to treat this as the singular exception it probably is:
 
-* .messageText
-* .messageType
-* .messageAppendedText
-* .messageNumber
+* **.messageText**
+* **.messageType**
+* **.messageAppendedText**
+* **.messageNumber**
 
 Each of these attributes returns the corresponding attribute of the *first* entry in arsErrorList. There is also the 'message' attribute:
 
-* .message
+* **.message**
 
  in the case where the **ARSRestAPI** needs to return an exception that did not originate from the ARServer (hence has no entries in **arsErrorList**), this value can be set independenly. If .message has been explicitly set, it will be returned, otherwise .messageText from the first entry in **arsErrorList** will be returned.
 
 There is also this function:
 
-* .toString()
+* **.toString()**
 
   this overrides [Object.prototype.toString](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/toString) so that you can directly print a string representation of the error with the form:
   ```javascript
@@ -265,9 +265,9 @@ There is also this function:
 
 And finally there is this special attribute:
 
-* .error
+* **.error**
 
- this returns an [Error Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) with the message set to the output of .toString()
+ this returns an [Error Object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error) with the message set to the output of **.toString()**
 
 Ok, so that's how to capture exceptions from **ARSRestAPI**, let's have a detailed look at each of the functions.
 
@@ -348,7 +348,7 @@ let api = await new RemedyRestAPI({
 
 ```
 
-You can send all of the arguments to authenticate() as you would to the constructor (server, user, password, etc), however these arguments will *overwrite* corresponding attributes that already exist in the object (for instance if you were calling authenticate on a previously instantiated object=)
+You can send all of the arguments to **authenticate()** as you would to the constructor (server, user, password, etc), however these arguments will *overwrite* corresponding attributes that already exist in the object (for instance if you were calling authenticate on a previously instantiated object)
 
 
 ## isAuthenticated
@@ -361,7 +361,7 @@ if (api.isAuthenticated){
 }
 ```
 
-pretty straightforward, this attribute is true if we've called authenticate() already and false if we haven't. NOTE: this doesn't check to make sure we're *still* authenticated (like checking to see if the session is expired or anything). It just checks to see if we've previously called authenticate() successfully is all.
+pretty straightforward, this attribute is true if we've called **authenticate()** already and false if we haven't. NOTE: this doesn't check to make sure we're *still* authenticated (like checking to see if the session is expired or anything). It just checks to see if we've previously called **authenticate()** successfully is all.
 
 
 ## logout()
@@ -389,25 +389,25 @@ let resultList = await api.query({
 
 As you might imagine, this function allows you to execute a query (**QBE**) against a given form (**schema**), retrieving selected **field** values from selected records. "QBE" stands for [Query By Example](https://en.wikipedia.org/wiki/Query_by_Example) which is what remedy "Qualifications" actually are. I have to admit, BMC embracing this technology back in the early 90's was actually fairly visionary.
 
-* schema
+* **schema**
   this is the name of the form you want to query against. If this was SQL, it'd be the table name.
 
-* fields
+* **fields**
   this is an array of field names on the form specified by <schema> for which you'd like to get data. If this was SQL, it'd be the select statement.
 
-* QBE
+* **QBE**
   the "query string" (aka "qualification"). If this was SQL, this would be the where clause
 
-* offset
+* **offset**
   optional. if not set we just start at row 1. However, if you set it, we'll only return results starting at whatever row you specify. This is handy, of course, if you're building a paginated record display or whatnot.
 
-* limit
+* **limit**
   optional. if not set, we just return everything up to the limit set on the server. Otherwise we only return this many rows. Again, really this is for building paginated displays.
 
-* sort
+* **sort**
   [the documentation from BMC](https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-GETmultipleentries) is hilariously sparse on this topic. As far as I can tell, you can at least specify ascending ("asc") and descending ("desc") by appending that with a dot to the field name. Yeah I don't even know. If you specify it, I'll send it to the server. You may or may not get back what you're expecting. Who knows. BMC doesn't write documentation, they just employ boatloads of salesfolk apparently.
 
-* fetchAttachments
+* **fetchAttachments**
   optional, if not specified defaults to false. If true, AND you have specified at least one attachment field on <fields>, the function will fetch the binary data for each attachment and return it inline with results (see below)
 
 The function returns the same datastructure as returned by the API:
@@ -600,29 +600,29 @@ ok so that's how it figures out the existing record to update, and if all that f
 
 so here's all the options. there are many:
 
-* fields
+* **fields**
   an object containing field names and values
 
-* QBE
+* **QBE**
   same thing as on query. find records matching this QBE qualification and update one of them or error
 
-* multimatchOption
+* **multimatchOption**
   this is one of "error" or "useFirstMatching", if not specified it defaults to "error". In the case where **QBE** is specified, this indicates how to handle things if the QBE matches more than one record. Obviously a value of "error" means we'll be seein' ya in the Fiddy Block, and a value sof "useFirstMatching" means just treat the first result like it was the only result and keep on truckin'
 
-* handleDuplicateEntryId
+* **handleDuplicateEntryId**
   this is one of the following:
 
-  * error
+  * **error**
     throw an error if **QBE** or an 'entryId' on **fields** matches an existing record
 
-  * create
+  * **create**
     if **QBE** is specified and either matches an existing record or no records, OR if **fields** contains an 'entryId' value that DOES match an existing record create a new record with the given field values. If 'entryId' IS specified BUT does not match any existing value, create a new record on the specified schema with the given field values AND use that value for 'entryId'
 
-  * overwrite
+  * **overwrite**
     if **QBE** is specified and either matches an existing record OR if **fields** contains an 'entryId' value that DOES match an existing record, delete the existing record from the database and replace it wholesale with the given field values. This one is insidious, in that it is quite easy to blow away create date / modify date, etc unintentionally. Be careful with this one mmmm'kay?
 
-  * merge
+  * **merge**
     if **QBE** is specified and either matches an existing record OR if **fields** contains an 'entryId' value that DOES match an existing record, update the existing record with the given field values, leaving all other fields in place. **EXCEPT NOT FOR REQUIRED FIELDS**. You must supply a value for ALL required fields on this. If you leave 'em null, you're gonna get the "can't reset required field to null" error. For non-required fields it works pretty much like modifyTicket().
 
-  * alwaysCreate
+  * **alwaysCreate**
     just forget everything and make a new entryId for it. Yes, even if you have **QBE** set and it matches something, or if you have an 'entryId' in **fields**.
