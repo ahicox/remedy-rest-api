@@ -231,7 +231,6 @@ fromEpoch(epoch, type){
     }
 }
 
-
 /*
     NOTE: we might want to have some currency manipulation helpers here
 */
@@ -417,7 +416,7 @@ get error(){
 /*
     return a nice string
 */
-get toString(){
+toString(){
     return(`[http/${this.httpStatus} ${this.messageType} (${this.messageNumber})]: ${this.message} / ${this.messageAppendedText}`);
 }
 
@@ -484,6 +483,7 @@ go(){
     return(new Promise(function(resolve, reject){
         let xhr = new XMLHttpRequest();
         if (self.timeout > 0){ xhr.timeout = self.timeout; }
+        if (self.hasAttribute('responseType')){ xhr.responseType = self.responseType; }
 
         // success callback
         xhr.addEventListener("load", function(){
@@ -806,6 +806,8 @@ query(p){
                 thrownByFunctionArgs:   p
             }));
         }
+        // default value for fetchAttachments
+        if ((! p.hasOwnProperty('fetchAttachments')) || (p.fetchAttachments !== true)){ p.fetchAttachments = false; }
 
         if (inputValid){
 
@@ -837,7 +839,48 @@ query(p){
                 */
 
                 try {
-                    resolve(JSON.parse(xhr.responseText));
+                    let resp = JSON.parse(xhr.responseText);
+                    let promiseKeeper = [];
+
+                    // handle getting attachments (if enabled)
+                    if (p.fetchAttachments){
+                        resp.entries.forEach(function(row){
+
+                            // figure out the entry id we're dealin' with for the getAttachment call
+                            if (row.hasOwnProperty('_links') && row._links.hasOwnProperty('self') && row._links.self[0].hasOwnProperty('href')){
+                                let parse = row._links.self[0].href.split('/');
+                                let ticket = parse[(parse.length -1)];
+
+                                // find attachment fields if there are any
+                                Object.keys(row.values).forEach(function(field){
+                                    if ((typeof(row.values[field]) == 'object') && row.values[field].hasOwnProperty('name') && row.values[field].hasOwnProperty('sizeBytes')){
+                                        if (self.debug){ console.log(`fetching attachment from record: ${ticket} and field: ${field} with size: ${row.values[field].sizeBytes} and filename: ${row.values[field].name}`); }
+                                        promiseKeeper.push(
+                                            self.getAttachment({
+                                                schema:     p.schema,
+                                                ticket:     ticket,
+                                                fieldName:  field
+                                            }).then(function(data){
+                                                row.values[field].data = data;
+                                            })
+                                        );
+                                    }
+                                });
+                            }else{
+                                if (self.debug){ console.log("[query]: can't parse entryId from self link to get attachment");}
+                            }
+                        }); // end itterating fields on rows looking for attachments to fetch
+                        if (promiseKeeper.length > 0){
+                            Promise.all(promiseKeeper).then(function(p){
+                                resolve(resp);
+                            }).catch(function(e){
+                                // e should already be blessed into ARSRestException
+                                reject(e);
+                            });
+                        }
+                    }else{
+                        resolve(resp);
+                    }
                 }catch (e){
                     reject(new ARSRestException({
                         messageType:            'non-ars',
@@ -861,9 +904,10 @@ query(p){
 
 /*
     getTicket({
-        schema:       <form name>
-        ticket:       <ticket number>
-        fields:       [array, of, fieldnames, to, get, values, for] -- note add something for assoc stuff later
+        schema:             <form name>
+        ticket:             <ticket number>
+        fields:             [array, of, fieldnames, to, get, values, for] -- note add something for assoc stuff later
+        fetchAttachments:   true | false (default false). if true, fetch the binary data for attachments and include in .data
     })
 */
 getTicket(p){
@@ -906,6 +950,8 @@ getTicket(p){
             }
         });
 
+        // default value for fetchAttachments
+        if ((! p.hasOwnProperty('fetchAttachments')) || (p.fetchAttachments !== true)){ p.fetchAttachments = false; }
 
 
         // fields has to be an object too
@@ -942,7 +988,36 @@ getTicket(p){
                 */
 
                 try {
-                    resolve(JSON.parse(xhr.responseText));
+                    let resp = JSON.parse(xhr.responseText);
+                    let promiseKeeper = [];
+
+                    // handle getting attachments (if enabled)
+                    if (p.fetchAttachments){
+                        Object.keys(resp.values).forEach(function(field){
+                            if ((typeof(resp.values[field]) == 'object') && resp.values[field].hasOwnProperty('name') && resp.values[field].hasOwnProperty('sizeBytes')){
+                                if (self.debug){ console.log(`fetching attachment from field: ${field} with size: ${resp.values[field].sizeBytes} and filename: ${resp.values[field].name}`); }
+                                promiseKeeper.push(
+                                    self.getAttachment({
+                                        schema:     p.schema,
+                                        ticket:     p.ticket,
+                                        fieldName:  field
+                                    }).then(function(data){
+                                        resp.values[field].data = data;
+                                    })
+                                );
+                            }
+                        });
+                        Promise.all(promiseKeeper).then(function(p){
+                            resolve(resp);
+                        }).catch(function(e){
+                            // e should already be blessed into ARSRestException
+                            reject(e);
+                        })
+
+                    // don't need to look for attachments to fetch
+                    }else{
+                        resolve(JSON.parse(xhr.responseText));
+                    }
                 }catch (e){
                     reject(new ARSRestException({
                         messageType:            'non-ars',
@@ -954,6 +1029,106 @@ getTicket(p){
             }).catch(function(e){
                 // handle error
                 e.thrownByFunction = 'getTicket';
+                e.thrownByFunctionArgs = p;
+                reject(e);
+            });
+
+        }
+    }));
+}
+
+
+
+
+/*
+    getAttachment({
+        schema:             <form name>
+        ticket:             <ticket number>
+        fieldName:          <attachment field name>
+    })
+*/
+getAttachment(p){
+    let self = this;
+    return(new Promise(function(resolve, reject){
+
+        // input validation
+        let inputValid = true;
+
+        // if we're not authenticated, don't bother
+        if (! self.isAuthenticated){
+            inputValid = false;
+            reject(new ARSRestException({
+                messageType:            'non-ars',
+                message:                `operation requires authentication and api handle is not authenticated`,
+                thrownByFunction:       'getAttachment'
+            }));
+        }
+
+        // arguments are required
+        if (inputValid && (typeof(p) !== 'object')){
+            inputValid = false;
+            reject(new ARSRestException({
+                messageType:            'non-ars',
+                message:                `required inputs missing: given argument is not an object ${typeof(p)}`,
+                thrownByFunction:       'getAttachment'
+            }));
+        }
+
+        // check args
+        ['schema', 'ticket', 'fieldName'].forEach(function(a){
+            if (! (inputValid && p.hasOwnProperty(a) && self.isNotNull(p[a]))){
+                inputValid = false;
+                reject(new ARSRestException({
+                    messageType:            'non-ars',
+                    message:                `required argument missing: ${a}`,
+                    thrownByFunction:       'getAttachment',
+                    thrownByFunctionArgs:   p
+                }));
+            }
+        });
+
+        // do it. do it. do it 'till ya satisfied
+        if (inputValid){
+
+            new ARSRestDispatcher({
+                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/attach/${encodeURIComponent(p.fieldName)}`,
+                method:   'GET',
+                headers:  {
+                    "Authorization":    `AR-JWT ${self.token}`,
+                    //"Content-Type":     "application/x-www-form-urlencoded",
+                    //"Cache-Control":    "no-cache"
+                },
+                expectHtmlStatus: 200,
+                timeout:        self.timeout,
+                responseType:   'arrayBuffer'
+            }).go().then(function(xhr){
+                // handle success
+
+                /*
+                    LOOSE END 6/25/18 @ 1645
+                    my first thought was to make some kinda object model to represent
+                    an attachment (something like {name: <>, size: <>, data: <>})
+                    however, upon reflection, I think it's best that this function
+                    returns the raw binary data in an array buffer.
+
+                    you need to have data from the ticket to tell you how
+                    big it is and what it's name is anyhow. so we can either
+                    pass the user contextless binary (like we're doing), or
+                    we can do an extra fetch and get the meta-data for the attachment
+                    from the ticket.
+
+                    OR ... we can add a getAttachments option to getTicket and
+                    query. If you specify it, we just do the extra fetch to get
+                    the binary data inside the original response.
+
+                    you can call it yourself if you want to or just do it inside
+                    the original call automatically, which is like a 90% use case
+                    probably
+                */
+                resolve(xhr.responseText);
+            }).catch(function(e){
+                // handle error
+                e.thrownByFunction = 'getAttachment';
                 e.thrownByFunctionArgs = p;
                 reject(e);
             });
@@ -1021,6 +1196,37 @@ createTicket(p){
                 thrownByFunctionArgs:   p
             }));
         }
+
+        /*
+            LEFT OFF HERE - 6/26/18 @ 1054
+            next step is to hack sending attachments onto createTicket and mergeData
+            to do that, ARSRestDispatcher needs to know how to send multipart/form-data
+            requests as described here:
+
+            https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-Createanentrywithattachments
+
+            just doing this in node by brute-force formatting everything up and sending
+            it is definitely possible, HOWEVER our goal with this library is to do
+            everything on the legit XHR api interface so we can just drop the whole
+            shebang into a browser verbatim.
+
+            That being the case, what we actually need to do is to extend the XHR
+            shim library for node to support the new(ish) FormData API as described
+            here:
+
+            https://developer.mozilla.org/en-US/docs/Web/API/FormData
+
+            also of interest:
+
+            https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms/Sending_forms_through_JavaScript
+            https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+
+            once we've got the XMLHttpRequest node emulation library supporting the FormData
+            API, then we can code up ARSRestDispatcher to send multipart/form-data and we can
+            send values to attachment fields in the library.
+
+            for now, it supports retrieving attachments but not sending them.
+        */
 
         // woohah! i gochu-all-incheck!
         if (inputValid){

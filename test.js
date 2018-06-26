@@ -208,7 +208,7 @@ async function testAuthenticate(){
 
     // test authenticate from instantiated object
     await api.authenticate().catch(function(e){
-        throw(`\t[fail]: authenticate: ${e.toString}`)
+        throw(`\t[fail]: authenticate: ${e.toString()}`)
     });
     console.log(`\t[ok]: authenticate() with token\n\n${api.token}\n\n`);
 
@@ -220,7 +220,7 @@ async function testAuthenticate(){
 
     // test logout
     await api.logout().catch(function(e){
-        throw(`\t[fail]: logout returned error:\n\t\t${e.toString}`);
+        throw(`\t[fail]: logout returned error:\n\t\t${e.toString()}`);
     });
     console.log(`\t[ok]: logout`);
 
@@ -232,11 +232,11 @@ async function testAuthenticate(){
 
     // test inline authenticate with instantiation
     api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString}`)
+        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`)
     });
     console.log(`\t[ok]: inline authenticate() with token\n\n${api.token}\n\n`);
     await api.logout().catch(function(e){
-        throw(`\t[fail]: logout from inline authenticate returned error:\n\t\t${e.toString}`);
+        throw(`\t[fail]: logout from inline authenticate returned error:\n\t\t${e.toString()}`);
     });
 
     // test error from bad password/user
@@ -244,7 +244,7 @@ async function testAuthenticate(){
     let gotError = false;
     serverInfo.password = 'intentionallyBogusPassword';
     api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        console.log(`\t[ok]: bad password received expected error\n\t\t${e.toString}`);
+        console.log(`\t[ok]: bad password received expected error\n\t\t${e.toString()}`);
         gotError = true;
     });
     if (! gotError){
@@ -260,7 +260,7 @@ async function testAuthenticate(){
     serverInfo.timeout = 5000;
     console.log(`\t[testing unreachable server]: ${serverInfo.server} with timeout: ${(serverInfo.timeout/1000)}s ...`);
     api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        console.log(`\t[ok]: authenticate to unreachable server received expected error\n\t\t${e.toString} / ${e.event}`);
+        console.log(`\t[ok]: authenticate to unreachable server received expected error\n\t\t${e.toString()} / ${e.event}`);
         gotError = true;
     });
     if (! gotError){
@@ -287,7 +287,7 @@ let testTicket = '';
 async function testCreateTicket(){
 
     let api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString}`)
+        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`)
     });
     console.log("\t[ok] authenticated")
 
@@ -326,7 +326,7 @@ async function testCreateTicket(){
             */
         }
     }).catch(function(e){
-        throw(`\t[fail] createTicket failed: ${e.toString}`);
+        throw(`\t[fail] createTicket failed: ${e.toString()}`);
     });
     console.log(`\t[ok] created ${testTicket.entryId}`);
 
@@ -336,7 +336,7 @@ async function testCreateTicket(){
         fields:     ['Entry ID', 'Item Name', 'Long Description', 'Time', 'Date', 'dateTime'],
         ticket:     testTicket.entryId
     }).catch(function(e){
-        throw(`[fail] getTicket failed: ${e.toString}`);
+        throw(`[fail] getTicket failed: ${e.toString()}`);
     });
 
     /*
@@ -352,7 +352,7 @@ async function testCreateTicket(){
 
     // yo mama don't work here
     await api.logout().catch(function(e){
-        throw(`[logout failed?]: ${e.toString}`);
+        throw(`[logout failed?]: ${e.toString()}`);
     });
     console.log(`\t[ok] logout`);
 
@@ -375,7 +375,7 @@ async function testModifyTicket(){
 
     // login
     let api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString}`)
+        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`)
     });
     console.log("\t[ok] authenticated");
 
@@ -388,7 +388,7 @@ async function testModifyTicket(){
             'Item Name':       "Squidward"
         }
     }).catch(function(e){
-        throw(`[fail] modifyTicket returned error: ${e.toString}`);
+        throw(`[fail] modifyTicket returned error: ${e.toString()}`);
     });
     console.log(`\t[ok] modifyTicket ${testTicket.entryId}`);
 
@@ -398,7 +398,7 @@ async function testModifyTicket(){
         ticket:         testTicket.entryId,
         fields:         ['Item Name']
     }).catch(function(e){
-        throw(`[fail] getTicket failed to retrieve previously modified ticket ${testTicket.entryId}: ${e.toString}`);
+        throw(`[fail] getTicket failed to retrieve previously modified ticket ${testTicket.entryId}: ${e.toString()}`);
     });
     if (tmp.values['Item Name'] !== 'Squidward'){
         throw(`[fail] modifyTicket returned success but did not actually modify the record!`);
@@ -406,7 +406,7 @@ async function testModifyTicket(){
 
     // yo mama don't work here
     await api.logout().catch(function(e){
-        throw(`[logout failed?]: ${e.toString}`);
+        throw(`[logout failed?]: ${e.toString()}`);
     });
     console.log(`\t[ok] logout`);
 
@@ -427,7 +427,7 @@ testList.push(testModifyTicket);
 async function testMergeData(){
     // login
     let api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString}`)
+        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`)
     });
     console.log("\t[ok] authenticated");
 
@@ -439,7 +439,7 @@ async function testMergeData(){
             'Long Description':     "Ocean scientist, karate expert"
         }
     }).catch(function(e){
-        throw(`[mergeData (no entryId or QBE conflict)] failed: ${e.toString}`);
+        throw(`[mergeData (no entryId or QBE conflict)] failed: ${e.toString()}`);
     });
     console.log(`\t[ok] mergeData (no entryId or QBE conflict) / created: ${result.entryId}`);
 
@@ -455,7 +455,7 @@ async function testMergeData(){
         }
     }).catch(function(e){
         gotError = true;
-        console.log(`\t[ok] mergeData (entryId conflict / error): received expected error\n\t\t${e.toString}`);
+        console.log(`\t[ok] mergeData (entryId conflict / error): received expected error\n\t\t${e.toString()}`);
     });
     if (! gotError){
         throw(`[mergeData (entryId conflict / error)]: did not throw error!`);
@@ -474,7 +474,7 @@ async function testMergeData(){
         },
 
     }).catch(function(e){
-        throw(`[fail] mergeData (entryId conflict / create) returned error: ${e.toString}`);
+        throw(`[fail] mergeData (entryId conflict / create) returned error: ${e.toString()}`);
     });
     console.log(`\t[ok] mergeData (entryId conflict / create) created record: ${r3.entryId}`)
 
@@ -489,7 +489,7 @@ async function testMergeData(){
             'Entry ID':             r3.entryId
         }
     }).catch(function(e){
-        throw(`[fail] mergeData (entryId conflict / overwrite) returned error: ${e.toString}`);
+        throw(`[fail] mergeData (entryId conflict / overwrite) returned error: ${e.toString()}`);
     });
 
     // trust but verify
@@ -521,7 +521,7 @@ async function testMergeData(){
             'Entry ID':             r3.entryId
         }
     }).catch(function(e){
-        throw(`[fail] mergeData (entryId conflict / merge) returned error: ${e.toString}`);
+        throw(`[fail] mergeData (entryId conflict / merge) returned error: ${e.toString()}`);
     });
 
     /*
@@ -573,7 +573,7 @@ async function testMergeData(){
             'Entry ID':             r3.entryId
         }
     }).catch(function(e){
-        throw(`[fail] mergeData (entryId conflict / alwaysCreate) returned error: ${e.toString}`);
+        throw(`[fail] mergeData (entryId conflict / alwaysCreate) returned error: ${e.toString()}`);
     });
     if (r8.entryId != r3.entryId){
         console.log(`\t[ok] created new entry: ${r8.entryId}`);
@@ -593,7 +593,7 @@ async function testMergeData(){
         }
     }).catch(function(e){
         gotError = true;
-        console.log(`\t[ok] mergeData (QBE match / error) returned expected error:\n\t\t${e.toString}`);
+        console.log(`\t[ok] mergeData (QBE match / error) returned expected error:\n\t\t${e.toString()}`);
     });
     if (! gotError){
         throw(`[fail] mergeData (QBE match / error) did not return error!`);
@@ -608,7 +608,7 @@ async function testMergeData(){
             'Item Name':        'Sandy Squirrel'
         }
     }).catch(function(e){
-        throw(`[fail] mergeData (QBE match / merge) returned error:\n\t\t${e.toString}`);
+        throw(`[fail] mergeData (QBE match / merge) returned error:\n\t\t${e.toString()}`);
     });
     if (r10.entryId != result.entryId){
         throw(`[fail] mergeData (QBE match / merge) updated/created wrong entry: ${r10.entryId} (should be ${result.entryId})`);
@@ -635,7 +635,7 @@ async function testMergeData(){
         }
     }).catch(function(e){
         gotError = true;
-        console.log(`\t[ok] mergeData (QBE match / merge / multi-match / error): returned expected error:\n\t\t${e.toString}`);
+        console.log(`\t[ok] mergeData (QBE match / merge / multi-match / error): returned expected error:\n\t\t${e.toString()}`);
     });
     if (! gotError){
         throw(`[fail] mergeData (QBE match / merge / multi-match / error) did not generate error!`)
@@ -652,7 +652,7 @@ async function testMergeData(){
             'Item Name':        'Mister Krabbs'
         }
     }).catch(function(e){
-        throw(`[ok] mergeData (QBE match / merge / multi-match / useFirstMatching): returned error:\n\t\t${e.toString}`);
+        throw(`[ok] mergeData (QBE match / merge / multi-match / useFirstMatching): returned error:\n\t\t${e.toString()}`);
     });
 
     let r13 = await api.getTicket({
@@ -680,7 +680,7 @@ async function testMergeData(){
             'Long Description': "that's me in the show, isn't it?"
         }
     }).catch(function(e){
-        throw(`[fail] mergeData (QBE no-match / create) threw error: ${e.toString}`);
+        throw(`[fail] mergeData (QBE no-match / create) threw error: ${e.toString()}`);
     });
     console.log(`\t[ok] mergeData (QBE no-match / create) created record: ${r14.entryId}`);
 
@@ -722,7 +722,7 @@ async function testQueryAndDelete(){
 
     // login
     let api = await new Remedy(serverInfo).authenticate().catch(function(e){
-        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString}`)
+        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`)
     });
     console.log("\t[ok] authenticated");
 
@@ -732,7 +732,7 @@ async function testQueryAndDelete(){
          QBE:       "'Item Name' != $NULL$",
          fields:    ['Entry ID', 'Item Name']
     }).catch(function(e){
-        throw(`[fail] query returned error: ${e.toString}`)
+        throw(`[fail] query returned error: ${e.toString()}`)
     });
     console.log(`\t[ok] query returned`);
     r1.entries.forEach(function(row, idx){
@@ -752,12 +752,12 @@ async function testQueryAndDelete(){
             }).then(function(tkt){
                 console.log(`\t[ok] deleted ${tkt}`);
             }).catch(function(e){
-                throw(`[fail]: deleteTicket failed to delete ${row.values['Entry ID']}: ${e.toString}`);
+                throw(`[fail]: deleteTicket failed to delete ${row.values['Entry ID']}: ${e.toString()}`);
             })
         );
     });
     await Promise.all(promiseKeeper).catch(function(e){
-        throw(`[fail]: deleteTicket (Promise.all) returned an error: ${e.toString}`);
+        throw(`[fail]: deleteTicket (Promise.all) returned an error: ${e.toString()}`);
     })
 
     // yo mama don't work here
