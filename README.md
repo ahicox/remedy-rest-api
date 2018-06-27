@@ -2,7 +2,7 @@
 
 This is a javascript library for talking to [BMC's Remedy ARS REST API](https://docs.bmc.com/docs/ars91/en/bmc-remedy-ar-system-rest-api-overview-609071509.html).
 
-The goal of this project is to zero a zero-dependency library that can work either in node.js or in a browser (for instance, to drop into an HTML template). Unfortunately, node.js does not support the [XMLHTTPRequest (XHR) API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest), which is how browsers are able to perform asynchronous network operations (which is what talking to a REST service is). So in that respect, from the node.js side, this library is not truely dependency free as it is currently using [a forked version of the XmlHttpRequest npm package](https://github.com/ahicox/node-XMLHttpRequest). In any case ... that is the idea ... the library uses browser-standard XHR calls and we basically make a polyfill for node.js to support XHR.
+The goal of this project is to zero a zero-dependency library that can work either in node.js or in a browser (for instance, to drop into an HTML template). Unfortunately, node.js does not support the [XMLHTTPRequest (XHR) API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest), which is how browsers are able to perform asynchronous network operations (which is what talking to a REST service is). So in that respect, from the node.js side, this library is not truly dependency free as it is currently using [a forked version of the XmlHttpRequest npm package](https://github.com/ahicox/node-XMLHttpRequest). In any case ... that is the idea ... the library uses browser-standard XHR calls and we basically make a polyfill for node.js to support XHR.
 
 ### This Library is a Work in Progress
 
@@ -197,7 +197,7 @@ async function doSomeRemedyStuff(){
 }
 ```
 
-# Object Heirarchy & Capturing Exceptions
+# Object Hierarchy & Capturing Exceptions
 
 Yeah ok, so this is an Object Oriented library. From reading forums and blog posts, you'd think that was completely passe and it's all functional these days. Perhaps it isn't cool or whatever, but it gets the job done and I can dig it. So what've we got here? Well it's an object hierarchy that looks more or less like this:
 
@@ -241,7 +241,7 @@ Basically everything in **RemedyRestAPI** lends itself quite well to wrapping (p
 }
 ```
 
-You may note that 'arsErrorList' is an array. The AR Server may return an arbitrary number of error objects inside a single exception. Why? I don't know. BMC is like that, man. Maybe it contains something like a stack trace in some circumstances? I dunno. I DO know this though, that having multiple errors to deal with in the scenario of "I called this API function and it failed and I need to know the singlular reason why" is less than useful.
+You may note that 'arsErrorList' is an array. The AR Server may return an arbitrary number of error objects inside a single exception. Why? I don't know. BMC is like that, man. Maybe it contains something like a stack trace in some circumstances? I dunno. I DO know this though, that having multiple errors to deal with in the scenario of "I called this API function and it failed and I need to know the singular reason why" is less than useful.
 
 To that end, the **ARSRestExcption** class has some attribute accessors that you can call to treat this as the singular exception it probably is:
 
@@ -254,7 +254,7 @@ Each of these attributes returns the corresponding attribute of the *first* entr
 
 * **.message**
 
- in the case where the **ARSRestAPI** needs to return an exception that did not originate from the ARServer (hence has no entries in **arsErrorList**), this value can be set independenly. If .message has been explicitly set, it will be returned, otherwise .messageText from the first entry in **arsErrorList** will be returned.
+ in the case where the **ARSRestAPI** needs to return an exception that did not originate from the ARServer (hence has no entries in **arsErrorList**), this value can be set independently. If .message has been explicitly set, it will be returned, otherwise .messageText from the first entry in **arsErrorList** will be returned.
 
 There is also this function:
 
@@ -297,7 +297,7 @@ try {
 }
 ```
 
-the constructor doesn't return a promise so you can't use a fiddy block, you can still die tryin' :-)
+the constructor doesn't return a promise so you can't use a fiddy block, but of course, you can still die tryin' :-)
 
 * **server**
   The hostname or IP address of the REST endpoint serving the Remedy API
@@ -318,7 +318,7 @@ the constructor doesn't return a promise so you can't use a fiddy block, you can
   boolean value, defaults to false if not specified. if specified, messages will be echoed via console.log()
 
 * **timeout**
-  the maximum number of miliseconds to wait for a response on an open socket. By default we set this to 2 minutes. Be aware that there's also a maximum transaction timeout configured somewhere on the ARServer, but you can set it up here how long to wait before giving up.
+  the maximum number of milliseconds to wait for a response on an open socket. By default we set this to 2 minutes. Be aware that there's also a maximum transaction timeout configured somewhere on the ARServer, but you can set it up here how long to wait before giving up.
 
 
 ## authenticate()
@@ -389,7 +389,7 @@ let resultList = await api.query({
 })
 ```
 
-As you might imagine, this function allows you to execute a query (**QBE**) against a given form (**schema**), retrieving selected **field** values from selected records. "QBE" stands for [Query By Example](https://en.wikipedia.org/wiki/Query_by_Example) which is what remedy "Qualifications" actually are. I have to admit, BMC embracing this technology back in the early 90's was actually fairly visionary.
+As you might imagine, this function allows you to execute a query (**QBE**) against a given form (**schema**), retrieving selected **field** values from selected records. "QBE" stands for [Query By Example](https://en.wikipedia.org/wiki/Query_by_Example) which is what remedy "Qualifications" actually are. I have to admit, Remedy embracing this technology back in the early 90's was quite visionary.
 
 * **schema**
   this is the name of the form you want to query against. If this was SQL, it'd be the table name.
@@ -407,7 +407,7 @@ As you might imagine, this function allows you to execute a query (**QBE**) agai
   optional. if not set, we just return everything up to the limit set on the server. Otherwise we only return this many rows. Again, really this is for building paginated displays.
 
 * **sort**
-  [the documentation from BMC](https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-GETmultipleentries) is hilariously sparse on this topic. As far as I can tell, you can at least specify ascending ("asc") and descending ("desc") by appending that with a dot to the field name. Yeah I don't even know. If you specify it, I'll send it to the server. You may or may not get back what you're expecting. Who knows. BMC doesn't write documentation, they just employ boatloads of salesfolk apparently.
+  [the documentation from BMC](https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-GETmultipleentries) is hilariously sparse on this topic. As far as I can tell, you can at least specify ascending ("asc") and descending ("desc") by appending that with a dot to the field name. Yeah I don't even know. If you specify it, I'll send it to the server. You may or may not get back what you're expecting. Who knows. BMC does documentation the way my kids do the dishes y'know?
 
 * **fetchAttachments**
   optional, if not specified defaults to false. If true, AND you have specified at least one attachment field on **fields**, the function will fetch the binary data for each attachment and return it inline with results (see below)
@@ -564,7 +564,7 @@ let deletedEntryId = await api.deleteTicket({
 });
 ```
 
-deltes the specified **ticket** on the specified **schema** if the user you've authenticated as has permission to do so. it returns the entryId of the ticket you deleted because ... well I dunno why, but it just seemed like a cool thing to do y'know?
+deletes the specified **ticket** on the specified **schema** if the user you've authenticated as has permission to do so. it returns the entryId of the ticket you deleted because ... well I dunno why, but it just seemed like a cool thing to do y'know?
 
 
 ## mergeData()
@@ -584,9 +584,9 @@ let ticketIdentifier = await api.mergeData({
 console.log(`I merged data into: ${ticketIdentifier.entryId}`);
 ```
 
-OK, what does mergeData() do? Are you familiar with the BMC Data Import tool? This API call is basically the backend to that. This function allows you to take a set of field values and a form and say "go update it or make it".
+OK, what does mergeData() do? Are you familiar with the BMC Data Import tool? This API call is basically the back-end to that. This function allows you to take a set of field values and a form and say "go update it or make it".
 
-As usual, the [BMC Documentation](https://docs.bmc.com/docs/ars1805/mergeentry-formname-804716415.html) is laughably incomplete, so most of what I've got going on here, I had to reverse engineer by trial and error. Is it *supposed* to work this way or is the way that it works right now the result of buggy software that sailed through dev, right past QA and onto a salesperson's laptop? I don't even know. I can't know. Only BMC can know. And they sure as heck ain't writing it down *if they even know* So ... yeah, here we go.
+As usual, the [BMC Documentation](https://docs.bmc.com/docs/ars1805/mergeentry-formname-804716415.html) is laughably incomplete, so most of what I've got going on here, I had to reverse engineer by trial and error. Is it *supposed* to work this way or is the way that it works right now the result of buggy software that sailed through dev, right past QA and onto a customer's server? I don't even know. I can't know. Only BMC can know. And they sure as heck ain't writing it down *if they even know* So ... yeah, a'spelunking we will go!
 
 Let's start with "how does it know whether to make a new one or update an existing one?".
 As far as I can tell, it knows this by one of two methods:
@@ -628,3 +628,82 @@ so here's all the options. there are many:
 
   * **alwaysCreate**
     just forget everything and make a new entryId for it. Yes, even if you have **QBE** set and it matches something, or if you have an 'entryId' in **fields**.
+
+Here's the best pseudo-code representation of what's going on at the server side that I can muster:
+
+```javascript
+if (QBE specified){
+    if (QBE has matches){
+
+        // it no longer cares about 'Entry ID' in your field list
+        if (FieldList has an 'Entry ID'){ discard it; }
+
+        // handle multiple matches
+        if (QBE matches > 1) && (multimatchOption == 'error'){
+            throw(error);
+        }else if (QBE matches > 1) && (multimatchOption == 'useFirstMatching'){
+            discard all QBE results except the first one;
+        }
+
+        // check handleDuplicateEntryId
+        switch(handleDuplicateEntryId){
+            case 'error':
+                // ya rly, but that's what it does ...
+                throw(error);
+                break;
+            case 'create':
+                // what was the point of the QBE?
+                create_a_new_ticket_and_exit();
+                break;
+            case 'overwrite':
+                delete_QBE_match_and_replace_with_given_field_data();
+                break;
+            case 'merge':
+                update_existing_record_with_given_field_data();
+                // except for required fields ... again, I dunno, that's just what it seems to do
+                break;
+            case 'alwaysCreate':
+                // how is this different from 'create'? doesn't seem to be in this context anyhow.
+                create_a_new_ticket_and_exit();
+                break;
+        }
+    }else{
+        // shrug ... that seems to be how it works
+        if (handleDuplicateEntryId == 'error'){ throw(error); }
+
+        // create it
+        if ((FieldList has an 'Entry ID') && (FieldList['Entry ID'] does not match an existing record)){
+            use given 'Entry ID';
+        }
+        create_a_new_ticket_and_exit();
+    }
+}else if (FieldList has an 'Entry ID'){
+    if (FieldList['Entry ID'] matches an existing record){
+        // check handleDuplicateEntryId
+        switch(handleDuplicateEntryId){
+            case 'error':
+                // ya rly, but that's what it does ...
+                throw(error);
+                break;
+            case 'create':
+                discard FieldList['Entry ID'];
+                create_a_new_ticket_and_exit();
+                break;
+            case 'overwrite':
+                delete_Entry_ID_match_and_replace_with_given_field_data();
+                break;
+            case 'merge':
+                update_existing_record_with_given_field_data();
+                // except for required fields ... again, I dunno, that's just what it seems to do
+                break;
+            case 'alwaysCreate':
+                // how is this different from 'create'?
+                create_a_new_ticket_and_exit();
+                break;
+        }
+    }else{
+        use given 'Entry ID';
+        create_a_new_ticket_and_exit();
+    }
+}
+```
