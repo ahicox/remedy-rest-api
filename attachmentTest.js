@@ -5,10 +5,10 @@ const fsPromises = fs.promises;
 const Remedy = require('./remedy-rest-api.js');
 let testList = [];
 let serverInfo = {
-    server:     'nitsm-dev.ndc.nasa.gov',
+    server:     ,
     protocol:   'https',
-    user:       'nitsmsync',
-    password:   'nitsmsync'
+    user:       ,
+    password:   
 };
 
 
