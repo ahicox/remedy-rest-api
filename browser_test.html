@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <!--
+            browser-based test of remedy-rest-api.js
+            Andrew N. Hicox <andrew.n.hicox@nasa.gov>
+            6/28/18
+         -->
+
+        <meta charset="utf-8" />
+ 		<meta name="apple-mobile-web-app-capable" content="yes">
+ 		<meta name="viewport" content="user-scalable=no" />
+
+
+        <script src="./lib/remedy-rest-api-browser.js"></script>
+        <script src="./lib/test-browser.js"></script>
+
+
+        <!-- don't make Tim Gunn question your taste level mmmm'kay? -->
+        <style type="text/css">
+            /* body props */
+            body {
+                background-color:	#FFFFFF;
+                font-size:		    12px;
+                font-family:		Arial, Helvetica, sans-serif;
+                margin:             0;
+                background:			radial-gradient(rgba(255, 255, 255, .8), rgba(255, 255, 255, .5), rgba(100, 100, 100, .1));
+			}
+            #page-content {
+				display:		    block;
+				margin:			    0;
+                padding:            0;
+				overflow:		    hidden;
+
+			}
+			#header {
+				background-color:	#393939;
+				color:		        #F0F0F0;
+                font-size:          1em;
+				padding:		    .5em;
+                margin:             0;
+			}
+            #header h1 {
+				display:			inline-block;
+                padding:            0;
+                margin:             0;
+			}
+            fieldset {
+				float:				left;
+				background:			radial-gradient(rgba(255, 255, 255, .8), rgba(255, 255, 255, .5), rgba(100, 100, 100, .1));
+				box-shadow: 		5px 5px 3px rgba(100, 100, 100, .5);
+				border-radius: 		.5em;
+				border:				1px solid	#595959;
+				margin:				0 7px 7px 7px;
+			}
+            fieldset select {
+                width:              100%;
+            }
+            fieldset label {
+                font-weight:        bolder;
+            }
+            fieldset div {
+                margin-bottom:      .5em;
+            }
+            fieldset .btn {
+                float:              right;
+            }
+            a.btn {
+				padding:			.5em;
+				background-color:   #76AD92;
+				color:				#505050;
+				border:				1px solid #505050;
+				border-radius:		.5em;
+				display:			inline-block;
+				text-decoration: 	none;
+			}
+			a.btn:hover, a.btn:active {
+				color:				#EDEC30;
+				border:				1px solid #DCDC9F;
+				background-color:   #5D5D5D;
+                cursor:             pointer;
+			}
+        </style>
+
+        <!-- start 'er up sucka! -->
+        <script type="text/javascript">
+
+        // execute on page load
+        document.addEventListener("DOMContentLoaded", function(evt){
+            let headerMsg = document.getElementById('headerMsg');
+            headerMsg.innerHTML = "remedy-rest-api.js browser test";
+
+            let btn = document.getElementById('btnStart');
+            btn.addEventListener('click', function(btnRef){
+                window.serverInfo = {
+                    server:      document.getElementById('hostname').value,
+                    protocol:    document.getElementById('protocol').value,
+                    port:        document.getElementById('port').value,
+                    user:        document.getElementById('user').value,
+                    password:    document.getElementById('password').value
+                };
+
+                console.log('using connection parameters:')
+                Object.keys(serverInfo).forEach(function(k){ console.log(`[${k}]: ${serverInfo[k]}`)});
+                console.log();
+                runTest(0)
+
+            });
+        });
+
+        </script>
+
+    </head>
+    <body>
+        <div id="page-content">
+            <div id="header">
+                <h1 id="headerMsg">${titleHeader}</h1>
+            </div>
+            <div id="main">
+                <h1 id="msg"></h1>
+                <div class="infoSection" id="legendContainer">
+                    <fieldset>
+                        <legend>connection parameters</legend>
+                        <div><label for="hostname">hostname</label><br><input type="text" id="hostname"></div>
+                        <div>
+                            <label for="protocol">protocol</label><br>
+                            <select id="protocol">
+                                <option value="https" selected>https</option>
+                                <option value="http">http</option>
+                            </select>
+                        </div>
+                        <div><label for="port">port</label><br><input type="text" id="port"></div>
+                        <div><label for="user">user</label><br><input type="text" id="user"></div>
+                        <div><label for="user">password</label><br><input type="password" id="password"></div>
+                        <a class="btn highlight" id="btnStart">Start Test</a>
+                    </fieldset>
+                </div>
+                <div class="infoSection" id="tableContainer">
+                    <!-- insert table here -->
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
