@@ -91,8 +91,24 @@
             let headerMsg = document.getElementById('headerMsg');
             headerMsg.innerHTML = "remedy-rest-api.js browser test";
 
+            window.attachmentFile = {
+                loaded:     false
+            };
+            document.getElementById('attFile').addEventListener('change', function(){
+                let myReader = new FileReader();
+                myReader.onload = function(e){
+                    window.attachmentFile.loaded = true;
+                    window.attachmentFile.content = e.target.result;
+                }
+                window.attachmentFile.name = this.files[0].name;
+                window.attachmentFile.size = this.files[0].size;
+                //myReader.readAsArrayBuffer(this.files[0]);
+                myReader.readAsBinaryString(this.files[0]);
+            });
+
             let btn = document.getElementById('btnStart');
             btn.addEventListener('click', function(btnRef){
+
                 window.serverInfo = {
                     server:      document.getElementById('hostname').value,
                     protocol:    document.getElementById('protocol').value,
@@ -104,7 +120,14 @@
                 console.log('using connection parameters:')
                 Object.keys(serverInfo).forEach(function(k){ console.log(`[${k}]: ${serverInfo[k]}`)});
                 console.log();
-                runTest(0)
+
+                if (! window.attachmentFile.loaded){
+                    alert("select an attachment first");
+                }else{
+                    runTest(0);
+                }
+
+
 
             });
         });
@@ -116,6 +139,7 @@
         <div id="page-content">
             <div id="header">
                 <h1 id="headerMsg">${titleHeader}</h1>
+                <input type="file" class="logUpload" id="attFile">
             </div>
             <div id="main">
                 <h1 id="msg"></h1>

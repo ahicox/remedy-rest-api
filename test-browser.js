@@ -149,7 +149,7 @@ async function testUtilityCore(){
         message:    "instantiation and utility functions passed"
     });
 }
-testList.push(testUtilityCore);
+//testList.push(testUtilityCore);
 
 
 
@@ -241,7 +241,7 @@ async function testAuthenticate(){
     });
 
 }
-testList.push(testAuthenticate);
+//testList.push(testAuthenticate);
 
 
 
@@ -328,7 +328,7 @@ async function testCreateTicket(){
         message:    "createTicket & getTicket tests"
     });
 }
-testList.push(testCreateTicket);
+//testList.push(testCreateTicket);
 
 
 
@@ -382,7 +382,7 @@ async function testModifyTicket(){
         message:    "modifyTicket tests"
     });
 }
-testList.push(testModifyTicket);
+//testList.push(testModifyTicket);
 
 
 
@@ -676,12 +676,12 @@ async function testMergeData(){
         message:    "mergeData tests"
     });
 }
-testList.push(testMergeData);
+//testList.push(testMergeData);
 
 
 /*
    6 - get an attachment
-*/ 
+*/
 async function testGetAttachment(){
 	let api = await new Remedy(serverInfo).authenticate().catch(function(e){
 		throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`);
@@ -716,7 +716,7 @@ async function testGetAttachment(){
     	});
 
 }
-testList.push(testGetAttachment);
+//testList.push(testGetAttachment);
 
 
 /*
@@ -776,9 +776,51 @@ async function testQueryAndDelete(){
         message:    "query and deleteTicket tests"
     });
 }
-testList.push(testQueryAndDelete);
+//testList.push(testQueryAndDelete);
+
+/*
+    temp work for attachment upload
+*/
+async function testUp(){
+
+    let file = window.attachmentFile;
+    console.log(`\t[ok] I got here with ${file.content.byteLength} bytes in array buffer [file]: ${file.name} [size]: ${file.size}`);
+
+    // login
+    let api = await new Remedy(serverInfo).authenticate().catch(function(e){
+        throw(`\t[fail]: inline authenticate:\n\t\t${e.toString()}`)
+    });
+    console.log("\t[ok] authenticated");
+
+    // test create ticket with attachment
+    testTicket = await api.createTicket({
+        schema:     'ahicox:remedy-rest-api demo:data',
+        fields:     {
+            'Item Name':        "attachmentTest",
+            'Long Description': "this is not going to work",
+            'PictureAttachment': {
+                name:       file.name,
+                sizeBytes:  file.size,
+                data:       file.content
+            }
+        }
+    }).catch(function(e){
+        throw(`\t[fail] createTicket with attachment failed: ${e}`);
+    });
+    console.log(`\t[ok] created ${testTicket.entryId}`);
 
 
+    // yo mama don't work here
+    await api.logout().catch(function(e){
+        return(Promise.reject(`[logout failed?]: ${e}`));
+    });
+    console.log(`\t[ok] logout`);
+    return({
+        status:     true,
+        message:    "attachment upload tests"
+    });
+}
+testList.push(testUp)
 
 
 /*

@@ -226,6 +226,25 @@ fromEpoch(epoch, type){
     }
 }
 
+
+/*
+    getGUID()
+    return a globally unique(ish) identifier. probably not
+    truly unique in the scientific sense but pretty damn close
+    we'll also keep a cache in this._usedGUIDs, so we'll try not
+    to send the same GUID more than once. There are practical
+    limits here. useGUIDMaxCache sets a limit on the number
+    of previous used GUIDs we'll keep hold of ...
+*/
+getGUID(){
+    // thank you stackoverflow!
+    let guid = 'rmxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16);
+    });
+    return(guid);
+}
+
 /*
     NOTE: we might want to have some currency manipulation helpers here
 */
@@ -534,14 +553,18 @@ go(){
         // encode the content if we have it
         if (self.hasAttribute('content') && keepTruckin){
             let encoded = '';
-            try {
-                encoded = JSON.stringify(self.content);
-            }catch(e){
-                keepTruckin = false;
-                reject(new ARSRestException({
-                    messageType:    'non-ars',
-                    message:        `failed to encode content with JSON.stringify: ${e}`
-                }));
+            if (self.hasAttribute('preFormattedContent') && (self.preFormattedContent === true)){
+                encoded = self.content;
+            }else{
+                try {
+                    encoded = JSON.stringify(self.content);
+                }catch(e){
+                    keepTruckin = false;
+                    reject(new ARSRestException({
+                        messageType:    'non-ars',
+                        message:        `failed to encode content with JSON.stringify: ${e}`
+                    }));
+                }
             }
             if (keepTruckin){
                 if (self.debug){ self.start = self.epochTimestamp(true); }
@@ -1193,39 +1216,112 @@ createTicket(p){
             }));
         }
 
+        // detect whether we have attachments with data
+        let hasAttachments = false;
+        let attachments = {};
+
+        Object.keys(p.fields).forEach(function(k){
+            if (inputValid && (typeof(p.fields[k]) == 'object') && (p.fields[k].hasOwnProperty('name')) && (p.fields[k].hasOwnProperty('sizeBytes'))){
+                // ok it *looks* like a file attachment anyhow, make sure we got what we need
+                if ((self.isNull(p.fields[k].name)) || (self.isNull(p.fields[k].sizeBytes)) || (! (p.fields[k].hasOwnProperty('data')))){
+                    inputValid = false;
+                    reject(new ARSRestException({
+                        messageType:            'non-ars',
+                        message:                `a attachment was specified on field ${k} with incomplete meta data`,
+                        thrownByFunction:       'createTicket',
+                        thrownByFunctionArgs:   p
+                    }));
+                }else{
+                    hasAttachments = true;
+                    attachments[k] = p.fields[k];
+
+                    // the filename is supposed to be the only thing on the field list for the attachment field ..
+                    p.fields[k] = attachments[k].name;
+
+                }
+            }
+        });
+
+        if (hasAttachments){
+            console.log(`createTicket found attachments in field list:`);
+            Object.keys(attachments).forEach(function(fieldName){
+                console.log(`\t[${fieldName}]: [fileName]: ${attachments[fieldName].name} [size]: ${attachments[fieldName].data.byteLength}`)
+            });
+        }
+
         /*
-            LEFT OFF HERE - 6/26/18 @ 1054
-            next step is to hack sending attachments onto createTicket and mergeData
-            to do that, ARSRestDispatcher needs to know how to send multipart/form-data
-            requests as described here:
+            LEFT OFF HERE - 6/29/18 @ 1416
+            links of interest:
 
             https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-Createanentrywithattachments
-
-            just doing this in node by brute-force formatting everything up and sending
-            it is definitely possible, HOWEVER our goal with this library is to do
-            everything on the legit XHR api interface so we can just drop the whole
-            shebang into a browser verbatim.
-
-            That being the case, what we actually need to do is to extend the XHR
-            shim library for node to support the new(ish) FormData API as described
-            here:
-
             https://developer.mozilla.org/en-US/docs/Web/API/FormData
-
-            also of interest:
-
             https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms/Sending_forms_through_JavaScript
             https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
-            once we've got the XMLHttpRequest node emulation library supporting the FormData
-            API, then we can code up ARSRestDispatcher to send multipart/form-data and we can
-            send values to attachment fields in the library.
+            well shit. This technically does seem to work, or at least it doesn't provoke an immediate "bad request" from the server.
+            now I get this:
 
-            for now, it supports retrieving attachments but not sending them.
+            <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+            <html><head>
+            <title>502 Proxy Error</title>
+            </head><body>
+            <h1>Proxy Error</h1>
+            <p>The proxy server received an invalid
+            response from an upstream server.<br />
+            The proxy server could not handle the request <em><a href="/api/arsys/v1/entry/ahicox:remedy-rest-api demo:data">POST&nbsp;/api/arsys/v1/entry/ahicox:remedy-rest-api demo:data</a></em>.<p>
+            Reason: <strong>Error reading from remote server</strong></p></p>
+            <hr>
+            <address>Apache/2.2.15 (Red Hat) Server at nitsm-dev.ndc.nasa.gov Port 443</address>
+            </body></html>
+
+            hell if I know, man. ugh.
+            I give up for now
         */
 
-        // woohah! i gochu-all-incheck!
-        if (inputValid){
+
+        // do it with attachments
+        if (inputValid && hasAttachments){
+            let guid = self.getGUID();
+            let bigContent =
+`--${guid}
+Content-Disposition: form-data; name="entry"
+Content-Type: application/json; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+${JSON.stringify({values:p.fields})}
+`;
+            Object.keys(attachments).forEach(function(fieldName){
+                bigContent += `--${guid}
+Content-Disposition: form-data;
+name="attach-${fieldName}"; filename="${attachments[fieldName].name}"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+${attachments[fieldName].data}
+--${guid}--
+`
+            });
+
+            new ARSRestDispatcher({
+                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
+                method:   'POST',
+                headers:  {
+                    "Authorization":    `AR-JWT ${self.token}`,
+                    "Content-Type":     `multipart/form-data;boundary=${guid}`,
+                    "Cache-Control":    "no-cache"
+                },
+                preFormattedContent:    true,
+                content:                bigContent,
+                expectHtmlStatus: 201,
+                timeout:    self.timeout
+            }).go().then(function(xhr){
+                // success
+            }).catch(function(e){
+                // failure
+            });
+        }
+
+
+        // do it regular without attachments
+        if (inputValid && (! hasAttachments)){
             new ARSRestDispatcher({
                 endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
                 method:   'POST',
