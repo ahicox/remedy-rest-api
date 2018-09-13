@@ -8,7 +8,7 @@
 
     DO-TO (6/19/18 @ 1648)
 
-        * support for attachments
+        * support for sending attachments
 
         * ARFormEntry class to model a set of fields from a form
           also 'Status History', Diary fields, Associations, yadda yadda
@@ -30,9 +30,10 @@
 */
 'use strict';
 
-//var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;      // include the XHR emulation API
-//process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";                     // trust shady SSL certs
-
+/*
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;      // include the XHR emulation API
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";                     // trust shady SSL certs
+*/
 
 
 
@@ -224,25 +225,6 @@ fromEpoch(epoch, type){
         default:
             throw('[fromEpoch]: invalid date type specified');
     }
-}
-
-
-/*
-    getGUID()
-    return a globally unique(ish) identifier. probably not
-    truly unique in the scientific sense but pretty damn close
-    we'll also keep a cache in this._usedGUIDs, so we'll try not
-    to send the same GUID more than once. There are practical
-    limits here. useGUIDMaxCache sets a limit on the number
-    of previous used GUIDs we'll keep hold of ...
-*/
-getGUID(){
-    // thank you stackoverflow!
-    let guid = 'rmxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-            return v.toString(16);
-    });
-    return(guid);
 }
 
 /*
@@ -455,7 +437,7 @@ class ARSRestDispatcher extends noiceCoreUtility {
         method:             GET | POST | PUT | DELETE ,
         headers:            { header:value ...},
         content:            { object will be JSON.strigified before transmit }
-	responseType:	    ArrayBuffer | Blob | Document | JSON | String
+        responseType:	    ArrayBuffer | Blob | Document | JSON | String
         expectHtmlStatus:   <integer> (receiving this = reolve, else reject promise)
     })
 */
@@ -466,7 +448,8 @@ constructor (args){
         _version:       1,
         _className:     'ARSRestDispatcher',
         timeout:        0,
-        debug:          false
+        debug:          false,
+        encodeContent:  true
     });
 
     // required arguments
@@ -483,6 +466,9 @@ constructor (args){
     }else{
         this.myOKStatuses = this.expectHtmlStatus;
     }
+
+    // REMOVE ME
+    console.log(`[ARSRestDispatcher (endpoint)]: ${this.endpoint}`);
 
 }
 
@@ -553,9 +539,7 @@ go(){
         // encode the content if we have it
         if (self.hasAttribute('content') && keepTruckin){
             let encoded = '';
-            if (self.hasAttribute('preFormattedContent') && (self.preFormattedContent === true)){
-                encoded = self.content;
-            }else{
+            if (self.encodeContent){
                 try {
                     encoded = JSON.stringify(self.content);
                 }catch(e){
@@ -565,6 +549,8 @@ go(){
                         message:        `failed to encode content with JSON.stringify: ${e}`
                     }));
                 }
+            }else{
+                encoded = self.content;
             }
             if (keepTruckin){
                 if (self.debug){ self.start = self.epochTimestamp(true); }
@@ -670,14 +656,16 @@ authenticate(p){
 
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/jwt/login?username=${self.user}&password=${self.password}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/jwt/login`,
                 method:   'POST',
                 headers:  {
                     "Content-Type":     "application/x-www-form-urlencoded",
                     "Cache-Control":    "no-cache"
                 },
                 expectHtmlStatus: 200,
-                timeout:    self.timeout
+                timeout:       self.timeout,
+                content:       `username=${self.user}&password=${self.password}`,
+                encodeContent: false
             }).go().then(function(xhr){
                 // handle success
                 self.token = xhr.responseText;
@@ -741,11 +729,12 @@ logout(){
         // do the dirtay deed dirt cheap ...
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/jwt/logout`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/jwt/logout`,
                 method:   'POST',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
-                    "Cache-Control":    "no-cache"
+                    "Cache-Control":    "no-cache",
+                    "Content-Type":     "application/x-www-form-urlencoded"
                 },
                 expectHtmlStatus: 204,
                 timeout:    self.timeout
@@ -831,7 +820,7 @@ query(p){
         if (inputValid){
 
             // get the endpoint together
-            let url = `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/?q=${encodeURIComponent(p.QBE)}&fields=values(${p.fields.join(",")})`;
+            let url = `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/?q=${encodeURIComponent(p.QBE)}&fields=values(${p.fields.join(",")})`;
             ['offset', 'limit', 'sort'].forEach(function(a){
                 if ((p.hasOwnProperty(a)) && (self.isNotNull(p[a]))){
                     url += `&${a}=${encodeURIComponent(p[a])}`;
@@ -988,7 +977,7 @@ getTicket(p){
         if (inputValid){
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/?fields=values(${p.fields.join(",")})`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/?fields=values(${p.fields.join(",")})`,
                 method:   'GET',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1110,7 +1099,7 @@ getAttachment(p){
         if (inputValid){
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/attach/${encodeURIComponent(p.fieldName)}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/attach/${encodeURIComponent(p.fieldName)}`,
                 method:   'GET',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1216,114 +1205,41 @@ createTicket(p){
             }));
         }
 
-        // detect whether we have attachments with data
-        let hasAttachments = false;
-        let attachments = {};
-
-        Object.keys(p.fields).forEach(function(k){
-            if (inputValid && (typeof(p.fields[k]) == 'object') && (p.fields[k].hasOwnProperty('name')) && (p.fields[k].hasOwnProperty('sizeBytes'))){
-                // ok it *looks* like a file attachment anyhow, make sure we got what we need
-                if ((self.isNull(p.fields[k].name)) || (self.isNull(p.fields[k].sizeBytes)) || (! (p.fields[k].hasOwnProperty('data')))){
-                    inputValid = false;
-                    reject(new ARSRestException({
-                        messageType:            'non-ars',
-                        message:                `a attachment was specified on field ${k} with incomplete meta data`,
-                        thrownByFunction:       'createTicket',
-                        thrownByFunctionArgs:   p
-                    }));
-                }else{
-                    hasAttachments = true;
-                    attachments[k] = p.fields[k];
-
-                    // the filename is supposed to be the only thing on the field list for the attachment field ..
-                    p.fields[k] = attachments[k].name;
-
-                }
-            }
-        });
-
-        if (hasAttachments){
-            console.log(`createTicket found attachments in field list:`);
-            Object.keys(attachments).forEach(function(fieldName){
-                console.log(`\t[${fieldName}]: [fileName]: ${attachments[fieldName].name} [size]: ${attachments[fieldName].data.byteLength}`)
-            });
-        }
-
         /*
-            LEFT OFF HERE - 6/29/18 @ 1416
-            links of interest:
+            LEFT OFF HERE - 6/26/18 @ 1054
+            next step is to hack sending attachments onto createTicket and mergeData
+            to do that, ARSRestDispatcher needs to know how to send multipart/form-data
+            requests as described here:
 
             https://docs.bmc.com/docs/ars1805/entry-formname-804716411.html#id-/entry/{formName}-Createanentrywithattachments
+
+            just doing this in node by brute-force formatting everything up and sending
+            it is definitely possible, HOWEVER our goal with this library is to do
+            everything on the legit XHR api interface so we can just drop the whole
+            shebang into a browser verbatim.
+
+            That being the case, what we actually need to do is to extend the XHR
+            shim library for node to support the new(ish) FormData API as described
+            here:
+
             https://developer.mozilla.org/en-US/docs/Web/API/FormData
+
+            also of interest:
+
             https://developer.mozilla.org/en-US/docs/Learn/HTML/Forms/Sending_forms_through_JavaScript
             https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
-            well shit. This technically does seem to work, or at least it doesn't provoke an immediate "bad request" from the server.
-            now I get this:
+            once we've got the XMLHttpRequest node emulation library supporting the FormData
+            API, then we can code up ARSRestDispatcher to send multipart/form-data and we can
+            send values to attachment fields in the library.
 
-            <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-            <html><head>
-            <title>502 Proxy Error</title>
-            </head><body>
-            <h1>Proxy Error</h1>
-            <p>The proxy server received an invalid
-            response from an upstream server.<br />
-            The proxy server could not handle the request <em><a href="/api/arsys/v1/entry/ahicox:remedy-rest-api demo:data">POST&nbsp;/api/arsys/v1/entry/ahicox:remedy-rest-api demo:data</a></em>.<p>
-            Reason: <strong>Error reading from remote server</strong></p></p>
-            <hr>
-            <address>Apache/2.2.15 (Red Hat) Server at nitsm-dev.ndc.nasa.gov Port 443</address>
-            </body></html>
-
-            hell if I know, man. ugh.
-            I give up for now
+            for now, it supports retrieving attachments but not sending them.
         */
 
-
-        // do it with attachments
-        if (inputValid && hasAttachments){
-            let guid = self.getGUID();
-            let bigContent =
-`--${guid}
-Content-Disposition: form-data; name="entry"
-Content-Type: application/json; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-${JSON.stringify({values:p.fields})}
-`;
-            Object.keys(attachments).forEach(function(fieldName){
-                bigContent += `--${guid}
-Content-Disposition: form-data;
-name="attach-${fieldName}"; filename="${attachments[fieldName].name}"
-Content-Type: application/octet-stream
-Content-Transfer-Encoding: binary
-${attachments[fieldName].data}
---${guid}--
-`
-            });
-
+        // woohah! i gochu-all-incheck!
+        if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
-                method:   'POST',
-                headers:  {
-                    "Authorization":    `AR-JWT ${self.token}`,
-                    "Content-Type":     `multipart/form-data;boundary=${guid}`,
-                    "Cache-Control":    "no-cache"
-                },
-                preFormattedContent:    true,
-                content:                bigContent,
-                expectHtmlStatus: 201,
-                timeout:    self.timeout
-            }).go().then(function(xhr){
-                // success
-            }).catch(function(e){
-                // failure
-            });
-        }
-
-
-        // do it regular without attachments
-        if (inputValid && (! hasAttachments)){
-            new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
                 method:   'POST',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1433,7 +1349,7 @@ modifyTicket(p){
         // been smoove since days of underoos ...
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
                 method:   'PUT',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1508,7 +1424,7 @@ deleteTicket(p){
         // now here's the real dukey, meanin' whose really the 'ish
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
                 method:   'DELETE',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1656,7 +1572,7 @@ mergeData(p){
             if (p.hasOwnProperty('QBE') && (self.isNotNull(p.QBE))){ body.qualification = p.QBE; }
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/mergeEntry/${encodeURIComponent(p.schema)}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/mergeEntry/${encodeURIComponent(p.schema)}`,
                 method:   'POST',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1711,4 +1627,4 @@ mergeData(p){
 
 
 // hook for node
-// module.exports = RemedyRestAPI;
+//module.exports = RemedyRestAPI;
