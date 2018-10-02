@@ -6,6 +6,8 @@ The goal of this project is to zero a zero-dependency library that can work eith
 
 ### This Library is a Work in Progress
 
+**to-do: ** rewrite this in typescript.
+
 **What Works** everything in the BMC ARS REST API as described in the documentation link above works, with the exception of these features:
 
 * [Associations](https://docs.bmc.com/docs/ars1805/entry-formname-entryid-assoc-associationname-804716414.html)
