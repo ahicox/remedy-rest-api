@@ -8,7 +8,7 @@
 
     DO-TO (6/19/18 @ 1648)
 
-        * support for attachments
+        * support for sending attachments
 
         * ARFormEntry class to model a set of fields from a form
           also 'Status History', Diary fields, Associations, yadda yadda
@@ -446,7 +446,8 @@ constructor (args){
         _version:       1,
         _className:     'ARSRestDispatcher',
         timeout:        0,
-        debug:          false
+        debug:          false,
+        encodeContent:  true
     });
 
     // required arguments
@@ -463,6 +464,9 @@ constructor (args){
     }else{
         this.myOKStatuses = this.expectHtmlStatus;
     }
+
+    // REMOVE ME
+    if (this.debug){ console.log(`[ARSRestDispatcher (endpoint)]: ${this.endpoint}`); }
 
 }
 
@@ -533,14 +537,18 @@ go(){
         // encode the content if we have it
         if (self.hasAttribute('content') && keepTruckin){
             let encoded = '';
-            try {
-                encoded = JSON.stringify(self.content);
-            }catch(e){
-                keepTruckin = false;
-                reject(new ARSRestException({
-                    messageType:    'non-ars',
-                    message:        `failed to encode content with JSON.stringify: ${e}`
-                }));
+            if (self.encodeContent){
+                try {
+                    encoded = JSON.stringify(self.content);
+                }catch(e){
+                    keepTruckin = false;
+                    reject(new ARSRestException({
+                        messageType:    'non-ars',
+                        message:        `failed to encode content with JSON.stringify: ${e}`
+                    }));
+                }
+            }else{
+                encoded = self.content;
             }
             if (keepTruckin){
                 if (self.debug){ self.start = self.epochTimestamp(true); }
@@ -646,14 +654,16 @@ authenticate(p){
 
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/jwt/login?username=${self.user}&password=${self.password}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/jwt/login`,
                 method:   'POST',
                 headers:  {
                     "Content-Type":     "application/x-www-form-urlencoded",
                     "Cache-Control":    "no-cache"
                 },
                 expectHtmlStatus: 200,
-                timeout:    self.timeout
+                timeout:       self.timeout,
+                content:       `username=${self.user}&password=${self.password}`,
+                encodeContent: false
             }).go().then(function(xhr){
                 // handle success
                 self.token = xhr.responseText;
@@ -717,11 +727,12 @@ logout(){
         // do the dirtay deed dirt cheap ...
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/jwt/logout`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/jwt/logout`,
                 method:   'POST',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
-                    "Cache-Control":    "no-cache"
+                    "Cache-Control":    "no-cache",
+                    "Content-Type":     "application/x-www-form-urlencoded"
                 },
                 expectHtmlStatus: 204,
                 timeout:    self.timeout
@@ -749,6 +760,7 @@ logout(){
         offset:       <return data from this row number -- for paging>
         limit:        <max number of rows to return>
         sort:         <see the docs. but basically <field>.asc or <field>.desc comma separated
+
     })
 */
 query(p){
@@ -805,9 +817,16 @@ query(p){
         if ((! p.hasOwnProperty('fetchAttachments')) || (p.fetchAttachments !== true)){ p.fetchAttachments = false; }
 
         if (inputValid){
+            /*
+                11/1/2018 -- apparently the field list has to be url encoded as well
+            */
+            let getList = [];
+            p.fields.forEach(function(field){
+                getList.push(encodeURIComponent(field));
+            });
 
             // get the endpoint together
-            let url = `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/?q=${encodeURIComponent(p.QBE)}&fields=values(${p.fields.join(",")})`;
+            let url = `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/?q=${encodeURIComponent(p.QBE)}&fields=values(${getList.join(",")})`;
             ['offset', 'limit', 'sort'].forEach(function(a){
                 if ((p.hasOwnProperty(a)) && (self.isNotNull(p[a]))){
                     url += `&${a}=${encodeURIComponent(p[a])}`;
@@ -964,7 +983,7 @@ getTicket(p){
         if (inputValid){
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/?fields=values(${p.fields.join(",")})`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/?fields=values(${p.fields.join(",")})`,
                 method:   'GET',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1086,7 +1105,7 @@ getAttachment(p){
         if (inputValid){
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/attach/${encodeURIComponent(p.fieldName)}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/attach/${encodeURIComponent(p.fieldName)}`,
                 method:   'GET',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1226,7 +1245,7 @@ createTicket(p){
         // woohah! i gochu-all-incheck!
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}`,
                 method:   'POST',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1336,7 +1355,7 @@ modifyTicket(p){
         // been smoove since days of underoos ...
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
                 method:   'PUT',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1411,7 +1430,7 @@ deleteTicket(p){
         // now here's the real dukey, meanin' whose really the 'ish
         if (inputValid){
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}`,
                 method:   'DELETE',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
@@ -1559,7 +1578,7 @@ mergeData(p){
             if (p.hasOwnProperty('QBE') && (self.isNotNull(p.QBE))){ body.qualification = p.QBE; }
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}/api/arsys/v1/mergeEntry/${encodeURIComponent(p.schema)}`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/mergeEntry/${encodeURIComponent(p.schema)}`,
                 method:   'POST',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
