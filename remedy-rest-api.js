@@ -981,9 +981,13 @@ getTicket(p){
 
         // do it. do it. do it 'till ya satisfied
         if (inputValid){
+            let fieldTmp = [];
+            p.fields.forEach(function(fieldName){
+                fieldTmp.push(encodeURIComponent(fieldName));
+            });
 
             new ARSRestDispatcher({
-                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/?fields=values(${p.fields.join(",")})`,
+                endpoint: `${self.protocol}://${self.server}:${self.port}${(self.hasAttribute('proxyPath'))?self.proxyPath:''}/api/arsys/v1/entry/${encodeURIComponent(p.schema)}/${p.ticket}/?fields=values(${fieldTmp.join(",")})`,
                 method:   'GET',
                 headers:  {
                     "Authorization":    `AR-JWT ${self.token}`,
