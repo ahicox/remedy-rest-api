@@ -1,3 +1,7 @@
+# THIS VERSION IS DEPRECATED
+
+this version is **deprecated** the current version is forked onto my new profile (there've been some changes in my life hence the new profile). Here is the link to the current version: [https://github.com/SupaFuzz/remedy-rest-api](https://github.com/SupaFuzz/remedy-rest-api)
+
 # remedy-rest-api
 
 This is a javascript library for talking to [BMC's Remedy ARS REST API](https://docs.bmc.com/docs/ars91/en/bmc-remedy-ar-system-rest-api-overview-609071509.html).
